@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interactivo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+        /* Ajuste general de la página */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+        }
+
+        /* Contenedor del mapa */
+        #map {
+            height: 100%;
+            width: 75%;
+        }
+
+        /* Sidebar que no corta el mapa */
+        #sidebar {
+            width: 25%;
+            background-color: #f4f4f4;
+            box-shadow: -2px 0px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Estilos del formulario en la sidebar */
+        #sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        #addConcertBtnSubmit {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- Contenedor del mapa -->
+<div id="map"></div>
+
+<!-- Sidebar con el formulario -->
+<div id="sidebar">
+    <h2>Afegir concert</h2>
+    <form id="concertForm">
+        <div class="form-group">
+            <label for="nombre">Nombre del municipio:</label>
+            <input type="text" id="nombre" name="nombre" required>
+        </div>
+        <div class="form-group">
+            <label for="fecha">Fecha de actuación (dd/mm):</label>
+            <input type="text" id="fecha" name="fecha" required>
+        </div>
+        <button type="submit" id="addConcertBtnSubmit">Añadir Municipio</button>
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script>
+    // Inicializar el mapa
+    var map = L.map('map').setView([41.3851, 2.1734], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Enviar formulario de concierto
+    document.getElementById('concertForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+        fetch('/add', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            location.reload(); // Recargar la página para actualizar el mapa
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+    // Función para obtener los municipios
+    fetch('/municipios')
+        .then(response => response.json())
+        .then(data => {
+            // Cargar los polígonos de municipios en el mapa
+            L.geoJSON(data, {
+                style: function(feature) {
+                    if (feature.properties.tocat === 'Si') {
+                        return { color: "green" };
+                    } else {
+                        return { color: "blue" };
+                    }
+                }
+            }).addTo(map);
+        })
+        .catch(error => console.error('Error al cargar los municipios:', error));
+</script>
+
+</body>
+</html>
